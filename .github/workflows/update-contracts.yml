@@ -1,0 +1,115 @@
+name: update-contracts
+
+on: 
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+
+jobs:
+  get-latest-tag:
+    
+    runs-on: ubuntu-latest
+
+    outputs:
+      tag_commit_hash: ${{ steps.get_tag.outputs.tag_commit_hash }}
+      tag_name: ${{ steps.get_tag.outputs.tag_name }}
+      submodule_hash: ${{ steps.get_submodule_hash.outputs.submodule_hash }}
+
+    steps:
+    - uses: actions/checkout@v3
+      name: Checkout contracts repo
+      with:
+        repository: 'RussianInvestments/investAPI'
+        fetch-depth: 0
+
+    # Get the latest tag commit hash and the tag name
+    # If there are no tags, use the latest commit hash and "latest" as the tag name
+    - id: get_tag
+      name: Get tag commit hash
+      run: |
+        if [ -z "$(git tag)" ]; then
+          echo "tag_commit_hash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "tag_name="latest"" >> $GITHUB_OUTPUT
+        else
+          hash=$(git rev-list --tags --max-count=1)
+          echo "tag_commit_hash=$hash" >> $GITHUB_OUTPUT
+          echo "tag_name="$(git describe --tags $hash)"" >> $GITHUB_OUTPUT
+        fi
+
+    - uses: actions/checkout@v3
+      name: Checkout C# SDK repo
+      with:
+        fetch-depth: 0
+    
+    # Get submodule hash in the SDK repo in ./investAPI path
+    - id: get_submodule_hash
+      name: Get submodule hash
+      run: echo "submodule_hash=$(git rev-parse HEAD:investAPI)" >> $GITHUB_OUTPUT
+    
+  create-pull-request:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    needs: get-latest-tag
+
+    env:
+      PR_AUTHOR: github-actions
+      PR_AUTHOR_EMAIL: github-actions@github.com
+
+    # Run only if the submodule hash doesn't match the latest tag commit hash in the contracts repo
+    if: ${{ needs.get-latest-tag.outputs.submodule_hash != needs.get-latest-tag.outputs.tag_commit_hash }}
+    
+    steps:
+
+      - name: Print outputs
+        run: |
+          echo "Tag commit hash: ${{ needs.get-latest-tag.outputs.tag_commit_hash }}"
+          echo "Tag name: ${{ needs.get-latest-tag.outputs.tag_name }}"
+          echo "Submodule hash: ${{ needs.get-latest-tag.outputs.submodule_hash }}"
+          echo "Submodule hash doesn't match the latest tag commit hash in the contracts repo. Creating a pull request..."
+
+      - uses: actions/checkout@v3
+        name: Checkout C# SDK repo
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Update submodule
+        run: |
+          cd investAPI
+          git fetch
+          git checkout ${{ needs.get-latest-tag.outputs.tag_commit_hash }}
+          cd ..
+
+      - name: Get current version
+        id: get_version
+        run: |
+          echo "version=$(sed -n 's/.*<PackageVersion>\(.*\)<\/PackageVersion>.*/\1/p' ./Tinkoff.InvestApi/Tinkoff.InvestApi.csproj)" >> $GITHUB_OUTPUT
+      
+      - name: Bump release version
+        uses: christian-draeger/increment-semantic-version@1.1.0
+        id: bump_release_version
+        with:
+          current-version: ${{ steps.get_version.outputs.version }}
+          version-fragment: bug
+
+      - name: Replace package version
+        run: |
+          sed -i "s/<PackageVersion>.*<\/PackageVersion>/<PackageVersion>${{ steps.bump_release_version.outputs.next-version }}<\/PackageVersion>/" ./Tinkoff.InvestApi/Tinkoff.InvestApi.csproj
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Update contracts to ${{ needs.get-latest-tag.outputs.tag_name }}
+          author: ${{ env.PR_AUTHOR }} <${{ env.PR_AUTHOR_EMAIL }}>
+          committer: ${{ env.PR_AUTHOR }} <${{ env.PR_AUTHOR_EMAIL }}>
+          title: Update contracts to ${{ needs.get-latest-tag.outputs.tag_name }}
+          body: |
+            This PR updates the contracts submodule to the [${{ needs.get-latest-tag.outputs.tag_name }}](https://github.com/RussianInvestments/investAPI/releases/tag/${{ needs.get-latest-tag.outputs.tag_name }}).
+          branch: update-contracts-${{ needs.get-latest-tag.outputs.tag_name }}
+          delete-branch: true
