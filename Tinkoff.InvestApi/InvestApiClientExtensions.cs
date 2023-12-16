@@ -1,5 +1,6 @@
 ﻿using Grpc.Core;
 using Grpc.Net.Client.Configuration;
+using Grpc.Net.Client.Web;
 using Tinkoff.InvestApi;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -9,13 +10,11 @@ public static class InvestApiClientExtensions
     private const string DefaultName = "";
 
     public static IServiceCollection AddInvestApiClient(this IServiceCollection services,
-        Action<IServiceProvider, InvestApiSettings> configureSettings)
-    {
-        return AddInvestApiClient(services, DefaultName, configureSettings);
-    }
+        Action<IServiceProvider, InvestApiSettings> configureSettings, bool isWebClient = false) =>
+            AddInvestApiClient(services, DefaultName, configureSettings, isWebClient);
 
     public static IServiceCollection AddInvestApiClient(this IServiceCollection services, string name,
-        Action<IServiceProvider, InvestApiSettings> configureSettings)
+        Action<IServiceProvider, InvestApiSettings> configureSettings, bool isWebClient = false)
     {
         services.AddGrpcClient<InvestApiClient>(name,
                 (serviceProvider, options) =>
@@ -28,6 +27,9 @@ public static class InvestApiClientExtensions
                 })
             .ConfigureChannel((serviceProvider, options) =>
             {
+                if (isWebClient)
+                    options.HttpHandler = new GrpcWebHandler(new HttpClientHandler());
+
                 options.MaxReceiveMessageSize = null;
                 var settings = new InvestApiSettings();
                 configureSettings(serviceProvider, settings);
