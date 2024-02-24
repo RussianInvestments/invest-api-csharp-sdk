@@ -18,6 +18,16 @@ public partial class InstrumentsService
             return Bonds(InstrumentsRequest, null, null, cancellationToken);
         }
 
+        public AsyncUnaryCall<CurrenciesResponse> CurrenciesAsync(CancellationToken cancellationToken = default)
+        {
+            return CurrenciesAsync(InstrumentsRequest, null, null, cancellationToken);
+        }
+
+        public CurrenciesResponse Currencies(CancellationToken cancellationToken = default)
+        {
+            return Currencies(InstrumentsRequest, null, null, cancellationToken);
+        }
+
         public AsyncUnaryCall<FuturesResponse> FuturesAsync(CancellationToken cancellationToken = default)
         {
             return FuturesAsync(InstrumentsRequest, null, null, cancellationToken);
@@ -36,6 +46,16 @@ public partial class InstrumentsService
         public EtfsResponse Etfs(CancellationToken cancellationToken = default)
         {
             return Etfs(InstrumentsRequest, null, null, cancellationToken);
+        }
+
+        public AsyncUnaryCall<OptionsResponse> OptionsAsync(CancellationToken cancellationToken = default)
+        {
+            return OptionsAsync(InstrumentsRequest, null, null, cancellationToken);
+        }
+
+        public OptionsResponse Options(CancellationToken cancellationToken = default)
+        {
+            return Options(InstrumentsRequest, null, null, cancellationToken);
         }
 
         public AsyncUnaryCall<SharesResponse> SharesAsync(CancellationToken cancellationToken = default)
