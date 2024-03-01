@@ -102,7 +102,7 @@ jobs:
           sed -i "s/<PackageVersion>.*<\/PackageVersion>/<PackageVersion>${{ steps.bump_release_version.outputs.next-version }}<\/PackageVersion>/" ./Tinkoff.InvestApi/Tinkoff.InvestApi.csproj
 
       - name: Create pull request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6.0.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Update contracts to ${{ needs.get-latest-tag.outputs.tag_name }}
