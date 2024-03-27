@@ -9,7 +9,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.0"/>
-        <PackageReference Include="Tinkoff.InvestApi" Version="0.1.8"/>
+        <PackageReference Include="Tinkoff.InvestApi" Version="0.6.9"/>
     </ItemGroup>
      
 </Project>
