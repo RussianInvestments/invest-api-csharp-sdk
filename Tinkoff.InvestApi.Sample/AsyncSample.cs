@@ -26,6 +26,10 @@ public class AsyncSample : BackgroundService
             .GetOperationsDescriptionAsync(stoppingToken);
         _logger.LogInformation(operationsDescription);
 
+        var tradingStatuses = await 
+            new MarketDataServiceSample(_investApi).GetTradingStatusesAsync(stoppingToken, "ba64a3c7-dd1d-4f19-8758-94aac17d971b");
+        _logger.LogInformation(tradingStatuses);
+        
         _lifetime.StopApplication();
     }
 }

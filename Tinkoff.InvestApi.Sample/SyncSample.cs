@@ -26,6 +26,10 @@ public class SyncSample : BackgroundService
             .GetOperationsDescription();
         _logger.LogInformation(operationsDescription);
 
+        var tradingStatuses =
+            new MarketDataServiceSample(_investApi).GetTradingStatuses("ba64a3c7-dd1d-4f19-8758-94aac17d971b");
+        _logger.LogInformation(tradingStatuses);
+        
         _lifetime.StopApplication();
 
         return Task.CompletedTask;
